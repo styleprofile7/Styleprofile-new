@@ -92,15 +92,32 @@ export default function OutfitCard({ outfit, onOutfitUpdate }) {
       backgroundColor: cardColor, borderRadius: '24px', color: textColor,
       overflow: 'hidden', boxShadow: '0 10px 20px rgba(0,0,0,0.25)'
     }}>
-      {/* IMAGE */}
-      <div style={{ position: 'relative', height: '420px', flexShrink: 0 }}>
+
+      {/* IMAGE with face blur */}
+      <div style={{ position: 'relative', height: '420px', flexShrink: 0, overflow: 'hidden', borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
         <img
           src={outfit.image || outfit.imageUrl}
           alt={outfit.occasion || 'Outfit'}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
-        <div style={{ position: 'absolute', top: '16px', left: '16px', backgroundColor: 'rgba(255,255,255,0.2)', padding: '6px 10px', borderRadius: '8px', fontWeight: '800', fontSize: '1rem', color: 'white' }}>SP</div>
-        <div style={{ position: 'absolute', top: '16px', right: '16px', backgroundColor: 'white', padding: '6px 12px', borderRadius: '20px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {/* Face blur - blurs top 30% where face typically appears */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '32%',
+          backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+          background: 'rgba(22,48,43,0.1)', pointerEvents: 'none', zIndex: 1,
+        }} />
+        {/* Privacy badge */}
+        <div style={{
+          position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(22,48,43,0.85)', color: '#C9A84C',
+          fontSize: '9px', fontWeight: '700', letterSpacing: '0.12em',
+          textTransform: 'uppercase', padding: '3px 12px', borderRadius: '20px',
+          whiteSpace: 'nowrap', zIndex: 2, pointerEvents: 'none',
+        }}>🔒 Face Protected</div>
+        {/* SP badge */}
+        <div style={{ position: 'absolute', bottom: '12px', left: '14px', backgroundColor: 'rgba(255,255,255,0.2)', padding: '5px 10px', borderRadius: '8px', fontWeight: '800', fontSize: '13px', color: 'white', zIndex: 2 }}>SP</div>
+        {/* Action icons */}
+        <div style={{ position: 'absolute', top: '10px', right: '12px', backgroundColor: 'white', padding: '5px 10px', borderRadius: '20px', display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
           <span title="Fire">🔥</span>
           <span title="Trophy">🏆</span>
           <span
