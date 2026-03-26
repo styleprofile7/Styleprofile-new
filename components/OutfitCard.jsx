@@ -92,7 +92,6 @@ export default function OutfitCard({ outfit, onOutfitUpdate }) {
       backgroundColor: cardColor, borderRadius: '24px', color: textColor,
       overflow: 'hidden', boxShadow: '0 10px 20px rgba(0,0,0,0.25)'
     }}>
-
       {/* IMAGE with face blur */}
       <div style={{ position: 'relative', height: '420px', flexShrink: 0, overflow: 'hidden', borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
         <img
@@ -100,19 +99,23 @@ export default function OutfitCard({ outfit, onOutfitUpdate }) {
           alt={outfit.occasion || 'Outfit'}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
-        {/* Face blur - blurs top 30% where face typically appears */}
+        {/* Soft gradient face blur */}
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '32%',
-          backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-          background: 'rgba(22,48,43,0.1)', pointerEvents: 'none', zIndex: 1,
+          position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
+          backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+          pointerEvents: 'none', zIndex: 1,
         }} />
         {/* Privacy badge */}
         <div style={{
           position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(22,48,43,0.85)', color: '#C9A84C',
-          fontSize: '9px', fontWeight: '700', letterSpacing: '0.12em',
+          background: 'rgba(0,0,0,0.4)', color: 'rgba(255,255,255,0.95)',
+          fontSize: '9px', fontWeight: '600', letterSpacing: '0.1em',
           textTransform: 'uppercase', padding: '3px 12px', borderRadius: '20px',
           whiteSpace: 'nowrap', zIndex: 2, pointerEvents: 'none',
+          backdropFilter: 'blur(4px)',
         }}>🔒 Face Protected</div>
         {/* SP badge */}
         <div style={{ position: 'absolute', bottom: '12px', left: '14px', backgroundColor: 'rgba(255,255,255,0.2)', padding: '5px 10px', borderRadius: '8px', fontWeight: '800', fontSize: '13px', color: 'white', zIndex: 2 }}>SP</div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,13 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Swipe state
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [swipeDirection, setSwipeDirection] = useState(null);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+  const cardRef = useRef(null);
+
   useEffect(() => {
     const handleSearchEvent = (e) => setSearchQuery(e.detail);
     window.addEventListener('styleProfileSearch', handleSearchEvent);
@@ -30,6 +37,7 @@ export default function Home() {
       const snapshot = await getDocs(q);
       const fetchedOutfits = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAllOutfits(fetchedOutfits);
+      setCurrentIndex(0);
     } catch (error) {
       console.error('Error loading feed:', error);
     } finally {
@@ -58,50 +66,150 @@ export default function Home() {
     });
 
     setDisplayedOutfits(filtered);
+    setCurrentIndex(0);
   }, [allOutfits, activeFilter, searchQuery]);
+
+  // Touch swipe handlers
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Only swipe if horizontal movement is dominant
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      if (deltaX < 0 && currentIndex < displayedOutfits.length - 1) {
+        // Swipe left = next
+        setSwipeDirection('left');
+        setTimeout(() => { setCurrentIndex(i => i + 1); setSwipeDirection(null); }, 300);
+      } else if (deltaX > 0 && currentIndex > 0) {
+        // Swipe right = previous
+        setSwipeDirection('right');
+        setTimeout(() => { setCurrentIndex(i => i - 1); setSwipeDirection(null); }, 300);
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  // Mouse drag for desktop
+  const mouseStartX = useRef(null);
+  const handleMouseDown = (e) => { mouseStartX.current = e.clientX; };
+  const handleMouseUp = (e) => {
+    if (mouseStartX.current === null) return;
+    const delta = e.clientX - mouseStartX.current;
+    if (Math.abs(delta) > 60) {
+      if (delta < 0 && currentIndex < displayedOutfits.length - 1) {
+        setSwipeDirection('left');
+        setTimeout(() => { setCurrentIndex(i => i + 1); setSwipeDirection(null); }, 300);
+      } else if (delta > 0 && currentIndex > 0) {
+        setSwipeDirection('right');
+        setTimeout(() => { setCurrentIndex(i => i - 1); setSwipeDirection(null); }, 300);
+      }
+    }
+    mouseStartX.current = null;
+  };
 
   const filterBtnStyle = (tabName) => ({
     padding: '6px 16px', borderRadius: '6px', border: 'none',
     background: activeFilter === tabName ? '#16302B' : 'white',
     color: activeFilter === tabName ? 'white' : '#1e3046',
-    cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease'
+    cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease',
+    fontSize: '13px',
   });
+
+  const currentOutfit = displayedOutfits[currentIndex];
 
   if (currentUser) {
     return (
       <div style={{ paddingLeft: '20px', paddingRight: '20px', paddingBottom: '20px', overflowX: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', marginTop: '1rem' }}>
-          <div style={{ flex: '1', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button onClick={() => router.push('/upload')} style={{ padding: '6px 16px', borderRadius: '6px', border: '1px solid #1e3046', background: 'transparent', cursor: 'pointer', color: '#1e3046', fontWeight: '500' }}>
-              Upload
+
+        {/* Filters row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', marginTop: '1rem', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button onClick={() => router.push('/upload')} style={{ padding: '6px 16px', borderRadius: '6px', border: '1px solid #1e3046', background: 'transparent', cursor: 'pointer', color: '#1e3046', fontWeight: '500', fontSize: '13px' }}>
+              📸 Upload
             </button>
             <button onClick={() => setActiveFilter('all')} style={filterBtnStyle('all')}>All</button>
             <button onClick={() => setActiveFilter('top-rated')} style={filterBtnStyle('top-rated')}>Top Rated</button>
             <button onClick={() => setActiveFilter('fresh')} style={filterBtnStyle('fresh')}>Fresh</button>
           </div>
-          <div style={{ flex: '1', display: 'flex', justifyContent: 'center' }}>
-            <h2 style={{ margin: 0, fontFamily: "'Cormorant Garamond', serif", fontSize: '2.2rem', color: '#1e3046' }}>Your Feed</h2>
-          </div>
-          <div style={{ flex: '1' }} />
+          <h2 style={{ margin: 0, fontFamily: "'Cormorant Garamond', serif", fontSize: '1.8rem', color: '#1e3046' }}>Your Feed</h2>
         </div>
 
         {isLoading ? (
-          <p style={{ textAlign: 'center', color: '#8B9AAF', padding: '40px' }}>Loading latest styles...</p>
+          <div style={{ textAlign: 'center', padding: '60px', color: '#8B9AAF' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '12px' }}>✨</div>
+            <p>Loading latest styles...</p>
+          </div>
         ) : displayedOutfits.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <h3 style={{ fontSize: '1.5rem', fontFamily: "'Cormorant Garamond', serif", color: '#1e3046', marginBottom: '10px' }}>No looks found ✨</h3>
-            <p style={{ color: '#666' }}>Try searching for a different tag or be the first to post!</p>
+            <p style={{ color: '#666' }}>Try a different filter or be the first to post!</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', justifyContent: 'center', height: 'calc(100vh - 220px)', minHeight: '550px', maxHeight: '750px', width: '100%', marginTop: '10px' }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: '420px', height: '100%' }}>
-              {[...displayedOutfits].reverse().map((outfit) => (
-                <div key={outfit.id} style={{ position: 'absolute', width: '100%', height: '100%' }}>
-                  <OutfitCard outfit={outfit} onOutfitUpdate={fetchFeed} />
-                </div>
-              ))}
+          <>
+            {/* Card counter */}
+            <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '13px', color: '#888' }}>
+              {currentIndex + 1} of {displayedOutfits.length}
             </div>
-          </div>
+
+            {/* Swipe area */}
+            <div
+              ref={cardRef}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              style={{ display: 'flex', justifyContent: 'center', width: '100%', userSelect: 'none' }}
+            >
+              <div style={{
+                width: '100%',
+                maxWidth: '420px',
+                transform: swipeDirection === 'left' ? 'translateX(-60px) rotate(-3deg)' : swipeDirection === 'right' ? 'translateX(60px) rotate(3deg)' : 'translateX(0) rotate(0)',
+                opacity: swipeDirection ? 0 : 1,
+                transition: 'transform 0.3s ease, opacity 0.3s ease',
+              }}>
+                {currentOutfit && (
+                  <OutfitCard key={currentOutfit.id} outfit={currentOutfit} onOutfitUpdate={fetchFeed} />
+                )}
+              </div>
+            </div>
+
+            {/* Swipe nav buttons */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginTop: '20px' }}>
+              <button
+                onClick={() => currentIndex > 0 && setCurrentIndex(i => i - 1)}
+                disabled={currentIndex === 0}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid #16302B', background: 'white', cursor: currentIndex === 0 ? 'not-allowed' : 'pointer', fontSize: '18px', opacity: currentIndex === 0 ? 0.3 : 1, transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >←</button>
+
+              {/* Dots */}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {displayedOutfits.slice(Math.max(0, currentIndex - 2), Math.min(displayedOutfits.length, currentIndex + 3)).map((_, i) => {
+                  const realIdx = Math.max(0, currentIndex - 2) + i;
+                  return (
+                    <div key={realIdx} onClick={() => setCurrentIndex(realIdx)} style={{ width: realIdx === currentIndex ? '20px' : '8px', height: '8px', borderRadius: '4px', background: realIdx === currentIndex ? '#16302B' : '#C8C0B8', cursor: 'pointer', transition: 'all 0.2s' }} />
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => currentIndex < displayedOutfits.length - 1 && setCurrentIndex(i => i + 1)}
+                disabled={currentIndex === displayedOutfits.length - 1}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid #16302B', background: '#16302B', cursor: currentIndex === displayedOutfits.length - 1 ? 'not-allowed' : 'pointer', fontSize: '18px', opacity: currentIndex === displayedOutfits.length - 1 ? 0.3 : 1, transition: 'all 0.2s', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >→</button>
+            </div>
+
+            {/* Swipe hint */}
+            <p style={{ textAlign: 'center', fontSize: '11px', color: '#aaa', marginTop: '10px', letterSpacing: '0.05em' }}>
+              ← Swipe or tap arrows to browse →
+            </p>
+          </>
         )}
       </div>
     );
@@ -114,9 +222,9 @@ export default function Home() {
         <div className="hero-content">
           <h1>Discover Your Fashion Identity</h1>
           <p>Join our community, share your style, and connect with fashion enthusiasts worldwide.</p>
-          <div className="hero-buttons">
-            <button className="btn-primary" onClick={() => router.push('/signup')}>Start Your Journey</button>
-            <Link href="/quiz" className="btn-secondary">✨ Take Style Quiz</Link>
+          <div className="hero-buttons" style={{ flexWrap: 'wrap' }}>
+            <button className="btn-primary" onClick={() => router.push('/signup')} style={{ flex: '1', minWidth: '160px' }}>Start Your Journey</button>
+            <Link href="/quiz" className="btn-secondary" style={{ flex: '1', minWidth: '160px', textAlign: 'center' }}>✨ Take Style Quiz</Link>
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '40px', width: '100%', padding: '10px' }}>
